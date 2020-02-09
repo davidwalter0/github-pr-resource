@@ -93,6 +93,49 @@ func Get(request GetRequest, github Github, git Git, outputDir string) (*GetResp
 		return nil, fmt.Errorf("failed to write metadata: %s", err)
 	}
 
+	if debug {
+		fmt.Fprintln(os.Stderr, " len(request.Source.Labels)", len(request.Source.Labels), len(request.Source.Labels) > 0)
+		fmt.Fprintln(os.Stderr, "request.Source.Labels", request.Source.Labels)
+		fmt.Fprintln(os.Stderr, "pull.Labels", pull.Labels)
+	}
+	if len(request.Source.Labels) > 0 {
+		if debug {
+			fmt.Fprintln(os.Stderr, "request.Source.Labels", request.Source.Labels)
+		}
+		labels := []string{}
+		allPrLabels := []string{}
+		for _, wantedLabel := range request.Source.Labels {
+			for _, targetLabel := range pull.Labels {
+				if debug {
+					fmt.Fprintln(os.Stderr, "pull.Labels", pull.Labels)
+				}
+				allPrLabels = append(allPrLabels, targetLabel.Name)
+				if targetLabel.Name == wantedLabel {
+					labels = append(labels, targetLabel.Name)
+				}
+			}
+		}
+
+		if len(labels) > 0 {
+			b, err := json.Marshal(GetLabels{Labels: labels})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal labels: %s", err)
+			}
+			if err := ioutil.WriteFile(filepath.Join(path, "labels.json"), b, 0644); err != nil {
+				return nil, fmt.Errorf("failed to write labels: %s", err)
+			}
+		}
+		if len(allPrLabels) > 0 {
+			b, err := json.Marshal(AllPrLabels{Labels: allPrLabels})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal AllPrLabels: %s", err)
+			}
+			if err := ioutil.WriteFile(filepath.Join(path, "all-pr-labels.json"), b, 0644); err != nil {
+				return nil, fmt.Errorf("failed to write AllPrLabels: %s", err)
+			}
+		}
+	}
+
 	for _, d := range metadata {
 		filename := d.Name
 		content := []byte(d.Value)
@@ -145,4 +188,14 @@ type GetRequest struct {
 type GetResponse struct {
 	Version  Version  `json:"version"`
 	Metadata Metadata `json:"metadata,omitempty"`
+}
+
+// GetLabels ...
+type GetLabels struct {
+	Labels []string `json:"labels"`
+}
+
+// AllPrLabels ...
+type AllPrLabels struct {
+	Labels []string `json:"all-pr-labels"`
 }
