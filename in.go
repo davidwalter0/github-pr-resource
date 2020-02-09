@@ -103,26 +103,35 @@ func Get(request GetRequest, github Github, git Git, outputDir string) (*GetResp
 			fmt.Fprintln(os.Stderr, "request.Source.Labels", request.Source.Labels)
 		}
 		labels := []string{}
+		allPrLabels := []string{}
 		for _, wantedLabel := range request.Source.Labels {
 			for _, targetLabel := range pull.Labels {
 				if debug {
 					fmt.Fprintln(os.Stderr, "pull.Labels", pull.Labels)
 				}
+				allPrLabels = append(allPrLabels, targetLabel.Name)
 				if targetLabel.Name == wantedLabel {
 					labels = append(labels, targetLabel.Name)
 				}
 			}
 		}
-		if debug {
-			fmt.Fprintln(os.Stderr, "labels", labels, len(labels), len(labels) > 0)
-		}
+
 		if len(labels) > 0 {
 			b, err := json.Marshal(GetLabels{Labels: labels})
 			if err != nil {
-				return nil, fmt.Errorf("failed to marshal version: %s", err)
+				return nil, fmt.Errorf("failed to marshal labels: %s", err)
 			}
 			if err := ioutil.WriteFile(filepath.Join(path, "labels.json"), b, 0644); err != nil {
-				return nil, fmt.Errorf("failed to write version: %s", err)
+				return nil, fmt.Errorf("failed to write labels: %s", err)
+			}
+		}
+		if len(allPrLabels) > 0 {
+			b, err := json.Marshal(AllPrLabels{Labels: allPrLabels})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal AllPrLabels: %s", err)
+			}
+			if err := ioutil.WriteFile(filepath.Join(path, "all-pr-labels.json"), b, 0644); err != nil {
+				return nil, fmt.Errorf("failed to write AllPrLabels: %s", err)
 			}
 		}
 	}
@@ -184,4 +193,9 @@ type GetResponse struct {
 // GetLabels ...
 type GetLabels struct {
 	Labels []string `json:"labels"`
+}
+
+// AllPrLabels ...
+type AllPrLabels struct {
+	Labels []string `json:"all-pr-labels"`
 }

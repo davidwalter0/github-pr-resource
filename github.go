@@ -17,7 +17,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var debug = false
+var debug = true
 
 // Github for testing purposes.
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o fakes/fake_github.go . Github
